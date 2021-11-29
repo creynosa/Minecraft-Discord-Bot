@@ -8,6 +8,7 @@ import yaml
 from discord.ext import commands
 from dotenv import load_dotenv
 
+
 def loadEnv() -> None:
     """Reads and loads the environment variables specified in the project directory."""
     load_dotenv('.env')

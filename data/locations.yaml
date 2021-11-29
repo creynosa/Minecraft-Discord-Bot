@@ -1,1 +1,6 @@
-users: { }
+users:
+  435141251797483540:
+    locations:
+      farms: {}
+      homes: {}
+      other: {}
