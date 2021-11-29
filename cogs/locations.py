@@ -110,14 +110,15 @@ class Locations(commands.Cog):
             else:
                 break
 
-        if content == '1':
-            coordType = 'overworld'
-        elif content == '2':
-            coordType = 'nether'
-        elif content == '3':
-            coordType = 'end'
-        else:
-            coordType = None
+        match content:
+            case '1':
+                coordType = 'overworld'
+            case '2':
+                coordType = 'nether'
+            case '3':
+                coordType = 'end'
+            case _:
+                coordType = None
 
         coordinateText = """Please enter your coordinates in parentheses. Example: `(-25, 300, 69)`"""
         embed = self.makeAddPromptEmbed(text=coordinateText)
@@ -142,22 +143,23 @@ class Locations(commands.Cog):
 
         coordinates = self.extractCoords(content)
 
-        if coordType == 'overworld':
-            overworldCoords = coordinates
-            netherCoords = self.getNetherCoords(coordinates)
-            endCoords = None
-        elif coordType == 'nether':
-            overworldCoords = self.getOverworldCoords(coordinates)
-            netherCoords = coordinates
-            endCoords = None
-        elif coordType == 'end':
-            overworldCoords = None
-            netherCoords = None
-            endCoords = coordinates
-        else:
-            overworldCoords = None
-            netherCoords = None
-            endCoords = None
+        match coordType:
+            case 'overworld':
+                overworldCoords = coordinates
+                netherCoords = self.getNetherCoords(coordinates)
+                endCoords = None
+            case 'nether':
+                overworldCoords = self.getOverworldCoords(coordinates)
+                netherCoords = coordinates
+                endCoords = None
+            case 'end':
+                overworldCoords = None
+                netherCoords = None
+                endCoords = coordinates
+            case _:
+                overworldCoords = None
+                netherCoords = None
+                endCoords = None
 
         data[name] = {
             'overworld': str(overworldCoords),
