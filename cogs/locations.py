@@ -39,15 +39,14 @@ class Locations(commands.Cog):
             await ctx.send(embed=self.makeAddInvalidLocationTypeEmbed())
             return
 
-        match locationType:
-            case 'home':
-                data = locationData['homes']
-            case 'farm':
-                data = locationData['farms']
-            case 'other':
-                data = locationData['other']
-            case _:
-                data = None
+        if locationType == 'home':
+            data = locationData['homes']
+        elif locationType == 'farm':
+            data = locationData['farms']
+        elif locationType == 'farm':
+            data = locationData['other']
+        else:
+            data = None
 
         invalidNames = ('all', 'farms', 'homes', 'other')
         while (nameExists := self.nameExists(name, user)) or (invalidName := name in invalidNames):
@@ -111,15 +110,14 @@ class Locations(commands.Cog):
             else:
                 break
 
-        match content:
-            case '1':
-                coordType = 'overworld'
-            case '2':
-                coordType = 'nether'
-            case '3':
-                coordType = 'end'
-            case _:
-                coordType = None
+        if content == '1':
+            coordType = 'overworld'
+        elif content == '2':
+            coordType = 'nether'
+        elif content == '3':
+            coordType = 'end'
+        else:
+            coordType = None
 
         coordinateText = """Please enter your coordinates in parentheses. Example: `(-25, 300, 69)`"""
         embed = self.makeAddPromptEmbed(text=coordinateText)
@@ -144,23 +142,22 @@ class Locations(commands.Cog):
 
         coordinates = self.extractCoords(content)
 
-        match coordType:
-            case 'overworld':
-                overworldCoords = coordinates
-                netherCoords = self.getNetherCoords(coordinates)
-                endCoords = None
-            case 'nether':
-                overworldCoords = self.getOverworldCoords(coordinates)
-                netherCoords = coordinates
-                endCoords = None
-            case 'end':
-                overworldCoords = None
-                netherCoords = None
-                endCoords = coordinates
-            case _:
-                overworldCoords = None
-                netherCoords = None
-                endCoords = None
+        if coordType == 'overworld':
+            overworldCoords = coordinates
+            netherCoords = self.getNetherCoords(coordinates)
+            endCoords = None
+        elif coordType == 'nether':
+            overworldCoords = self.getOverworldCoords(coordinates)
+            netherCoords = coordinates
+            endCoords = None
+        elif coordType == 'end':
+            overworldCoords = None
+            netherCoords = None
+            endCoords = coordinates
+        else:
+            overworldCoords = None
+            netherCoords = None
+            endCoords = None
 
         data[name] = {
             'overworld': str(overworldCoords),
@@ -223,151 +220,148 @@ class Locations(commands.Cog):
             else:
                 break
 
-        match content:
-            case '1':
-                changePrompt = """Please enter the new name of this location."""
-                embed = self.makeEditPromptEmbed(text=changePrompt)
-                await ctx.send(embed=embed)
+        if content == '1':
+            changePrompt = """Please enter the new name of this location."""
+            embed = self.makeEditPromptEmbed(text=changePrompt)
+            await ctx.send(embed=embed)
 
+            try:
+                msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
+            except Exception as e:
+                logger.error(e)
+                await ctx.send(content=f"{ctx.author.mention}", embed=self.makeEditTimeoutEmbed())
+                return
+            content = msg.content.lower()
+            if content == 'cancel':
+                await ctx.send(embed=self.makeEditCancelledEmbed())
+                return
+            else:
+                name = content
+
+            invalidNames = ('all', 'farms', 'homes', 'other')
+            while (nameExists := self.nameExists(name, user)) or (invalidName := name in invalidNames):
+                if nameExists:
+                    message = "That location name already exists. Please enter a new name for this location."
+                    embed = self.makeEditPromptEmbed(message)
+                    await ctx.send(embed=embed)
+
+                    try:
+                        msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
+                    except Exception as e:
+                        logger.error(e)
+                        await ctx.send(content=f"{ctx.author.mention}", embed=self.makeAddTimeoutEmbed())
+                        return
+                    content = msg.content.lower()
+                    if content == 'cancel':
+                        await ctx.send(embed=self.makeAddCancelledEmbed())
+                        return
+                    else:
+                        name = msg.content
+                elif invalidName:
+                    message = 'That location name is invalid. Please enter a new name for this location.'
+                    embed = self.makeEditPromptEmbed(message)
+                    await ctx.send(embed=embed)
+
+                    try:
+                        msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
+                    except Exception as e:
+                        logger.error(e)
+                        await ctx.send(content=f"{ctx.author.mention}", embed=self.makeAddTimeoutEmbed())
+                        return
+                    content = msg.content.lower()
+                    if content == 'cancel':
+                        await ctx.send(embed=self.makeAddCancelledEmbed())
+                        return
+                    else:
+                        name = msg.content
+
+            newName = msg.content
+            userData[locationType].pop(locationName)
+            userData[locationType][newName] = locationData
+            self.saveData()
+
+            await ctx.send(embed=self.makeEditNameSuccessEmbed())
+        elif content == '2':
+            coordinateTypeText = """What type of coordinates do you wish to enter?
+
+                        `1.` Overworld
+                        `2.` Nether
+                        `3.` End"""
+            embed = self.makeEditPromptEmbed(text=coordinateTypeText)
+            await ctx.send(embed=embed)
+
+            while True:
                 try:
                     msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
                 except Exception as e:
                     logger.error(e)
                     await ctx.send(content=f"{ctx.author.mention}", embed=self.makeEditTimeoutEmbed())
                     return
+
                 content = msg.content.lower()
                 if content == 'cancel':
                     await ctx.send(embed=self.makeEditCancelledEmbed())
                     return
+                elif content not in ('1', '2', '3'):
+                    await ctx.send(embed=self.makeEditInvalidSelection())
                 else:
-                    name = content
+                    break
 
-                invalidNames = ('all', 'farms', 'homes', 'other')
-                while (nameExists := self.nameExists(name, user)) or (invalidName := name in invalidNames):
-                    if nameExists:
-                        message = "That location name already exists. Please enter a new name for this location."
-                        embed = self.makeEditPromptEmbed(message)
-                        await ctx.send(embed=embed)
+            if content == '1':
+                coordType = 'overworld'
+            elif content == '2':
+                coordType = 'nether'
+            elif content == '3':
+                coordType = 'end'
+            else:
+                coordType = None
 
-                        try:
-                            msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
-                        except Exception as e:
-                            logger.error(e)
-                            await ctx.send(content=f"{ctx.author.mention}", embed=self.makeAddTimeoutEmbed())
-                            return
-                        content = msg.content.lower()
-                        if content == 'cancel':
-                            await ctx.send(embed=self.makeAddCancelledEmbed())
-                            return
-                        else:
-                            name = msg.content
-                    elif invalidName:
-                        message = 'That location name is invalid. Please enter a new name for this location.'
-                        embed = self.makeEditPromptEmbed(message)
-                        await ctx.send(embed=embed)
+            changePrompt = """Please enter the new coordinates for this location. Example: `(-25, 300, 69)`"""
+            embed = self.makeAddPromptEmbed(text=changePrompt)
+            await ctx.send(embed=embed)
+            while True:
+                try:
+                    msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
+                except Exception as e:
+                    logger.error(e)
+                    await ctx.send(content=f"{ctx.author.mention}", embed=self.makeEditTimeoutEmbed())
+                    return
 
-                        try:
-                            msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
-                        except Exception as e:
-                            logger.error(e)
-                            await ctx.send(content=f"{ctx.author.mention}", embed=self.makeAddTimeoutEmbed())
-                            return
-                        content = msg.content.lower()
-                        if content == 'cancel':
-                            await ctx.send(embed=self.makeAddCancelledEmbed())
-                            return
-                        else:
-                            name = msg.content
+                content = msg.content.lower()
+                if content == 'cancel':
+                    await ctx.send(embed=self.makeEditCancelledEmbed())
+                    return
+                elif not self.areValidCoords(content):
+                    await ctx.send(embed=self.makeEditInvalidSelection())
+                else:
+                    break
 
-                newName = msg.content
-                userData[locationType].pop(locationName)
-                userData[locationType][newName] = locationData
-                self.saveData()
+            coordinates = self.extractCoords(content)
 
-                await ctx.send(embed=self.makeEditNameSuccessEmbed())
-            case '2':
-                coordinateTypeText = """What type of coordinates do you wish to enter?
+            if coordType == 'overworld':
+                overworldCoords = coordinates
+                netherCoords = self.getNetherCoords(coordinates)
+                endCoords = None
+            elif coordType == 'nether':
+                overworldCoords = self.getOverworldCoords(coordinates)
+                netherCoords = coordinates
+                endCoords = None
+            elif coordType == 'end':
+                overworldCoords = None
+                netherCoords = None
+                endCoords = coordinates
+            else:
+                overworldCoords = None
+                netherCoords = None
+                endCoords = None
 
-                        `1.` Overworld
-                        `2.` Nether
-                        `3.` End"""
-                embed = self.makeEditPromptEmbed(text=coordinateTypeText)
-                await ctx.send(embed=embed)
+            locationData['overworld'] = str(overworldCoords)
+            locationData['nether'] = str(netherCoords)
+            locationData['end'] = str(endCoords)
 
-                while True:
-                    try:
-                        msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
-                    except Exception as e:
-                        logger.error(e)
-                        await ctx.send(content=f"{ctx.author.mention}", embed=self.makeEditTimeoutEmbed())
-                        return
+            self.saveData()
 
-                    content = msg.content.lower()
-                    if content == 'cancel':
-                        await ctx.send(embed=self.makeEditCancelledEmbed())
-                        return
-                    elif content not in ('1', '2', '3'):
-                        await ctx.send(embed=self.makeEditInvalidSelection())
-                    else:
-                        break
-
-                match content:
-                    case '1':
-                        coordType = 'overworld'
-                    case '2':
-                        coordType = 'nether'
-                    case '3':
-                        coordType = 'end'
-                    case _:
-                        coordType = None
-
-                changePrompt = """Please enter the new coordinates for this location. Example: `(-25, 300, 69)`"""
-                embed = self.makeAddPromptEmbed(text=changePrompt)
-                await ctx.send(embed=embed)
-                while True:
-                    try:
-                        msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=30)
-                    except Exception as e:
-                        logger.error(e)
-                        await ctx.send(content=f"{ctx.author.mention}", embed=self.makeEditTimeoutEmbed())
-                        return
-
-                    content = msg.content.lower()
-                    if content == 'cancel':
-                        await ctx.send(embed=self.makeEditCancelledEmbed())
-                        return
-                    elif not self.areValidCoords(content):
-                        await ctx.send(embed=self.makeEditInvalidSelection())
-                    else:
-                        break
-
-                coordinates = self.extractCoords(content)
-
-                match coordType:
-                    case 'overworld':
-                        overworldCoords = coordinates
-                        netherCoords = self.getNetherCoords(coordinates)
-                        endCoords = None
-                    case 'nether':
-                        overworldCoords = self.getOverworldCoords(coordinates)
-                        netherCoords = coordinates
-                        endCoords = None
-                    case 'end':
-                        overworldCoords = None
-                        netherCoords = None
-                        endCoords = coordinates
-                    case _:
-                        overworldCoords = None
-                        netherCoords = None
-                        endCoords = None
-
-                locationData['overworld'] = str(overworldCoords)
-                locationData['nether'] = str(netherCoords)
-                locationData['end'] = str(endCoords)
-
-                self.saveData()
-
-                await ctx.send(embed=self.makeEditCoordinatesSuccessEmbed())
+            await ctx.send(embed=self.makeEditCoordinatesSuccessEmbed())
 
     @commands.command()
     async def view(self, ctx, *, location: str):
@@ -375,20 +369,19 @@ class Locations(commands.Cog):
         user = ctx.author
         self.validateUser(user)
 
-        match location:
-            case 'all':
-                await ctx.send(embed=self.makeViewAllEmbed(user))
-            case 'farms':
-                await ctx.send(embed=self.makeViewFarmsEmbed(user))
-            case 'homes':
-                await ctx.send(embed=self.makeViewHomesEmbed(user))
-            case 'other':
-                await ctx.send(embed=self.makeViewOtherEmbed(user))
-            case _:
-                try:
-                    await ctx.send(embed=self.makeViewEmbed(user, location))
-                except ValueError:
-                    await ctx.send(embed=self.makeLocationDoesNotExistEmbed())
+        if location == 'all':
+            await ctx.send(embed=self.makeViewAllEmbed(user))
+        elif location == 'farms':
+            await ctx.send(embed=self.makeViewFarmsEmbed(user))
+        elif location == 'homes':
+            await ctx.send(embed=self.makeViewHomesEmbed(user))
+        elif location == 'other':
+            await ctx.send(embed=self.makeViewOtherEmbed(user))
+        else:
+            try:
+                await ctx.send(embed=self.makeViewEmbed(user, location))
+            except ValueError:
+                await ctx.send(embed=self.makeLocationDoesNotExistEmbed())
 
     @commands.Cog.listener()
     async def on_ready(self):
