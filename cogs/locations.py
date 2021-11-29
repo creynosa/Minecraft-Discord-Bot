@@ -410,7 +410,7 @@ class Locations(commands.Cog):
         self.saveData()
         self.uploadToAWS()
 
-        embed = discord.Embed(color=0x52A435, text='Location data has been save and uploaded!')
+        embed = discord.Embed(color=0x52A435, description='Location data has been save and uploaded!')
         embed.set_author(name='Manual Save', icon_url=self.images['dirtBlock'])
 
         await ctx.send(embed=embed)
