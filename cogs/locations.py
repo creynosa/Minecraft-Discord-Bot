@@ -404,6 +404,17 @@ class Locations(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command()
+    @commands.is_owner()
+    async def save(self, ctx):
+        self.saveData()
+        self.uploadToAWS()
+
+        embed = discord.Embed(color=0x52A435, text='Location data has been save and uploaded!')
+        embed.set_author(name='Manual Save', icon_url=self.images['dirtBlock'])
+
+        await ctx.send(embed=embed)
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.downloadFromAWS()
