@@ -385,6 +385,25 @@ class Locations(commands.Cog):
             except ValueError:
                 await ctx.send(embed=self.makeLocationDoesNotExistEmbed())
 
+    @commands.command()
+    async def help(self, ctx):
+        availableCommands = {
+            '!add `<location type>` `<name>`\n\n\n': "Adds a new user location. Location type must be: `home`, `farm`, or `other`.\n\n",
+            '!remove `<location name>`\n\n': "Removes an existing location from a user.\n\n",
+            '!edit `<location name>`\n\n': "Edits an existing location's name or coordinates.\n\n",
+            '!view `<location>`\n\n\n': "Displays the coordinates of your location. Location can be: `all`, `farms`, `homes`, `others`, or a specific location name.\n\n",
+        }
+
+        commandsText = ''.join(list(availableCommands.keys()))
+        commandDescriptionsText = ''.join(list(availableCommands.values()))
+
+        embed = discord.Embed(color=0x52A435)
+        embed.set_author(name='Available Commands', icon_url=self.images['dirtBlock'])
+        embed.add_field(name='Command', value=commandsText)
+        embed.add_field(name='Description', value=commandDescriptionsText)
+
+        await ctx.send(embed=embed)
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.downloadFromAWS()
