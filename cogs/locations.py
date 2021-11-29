@@ -5,7 +5,9 @@ from typing import Optional
 
 import discord
 import yaml
-from discord.ext import commands
+from discord.ext import commands, tasks
+
+from aws import s3
 
 logger = getLogger("main.locations")
 
@@ -388,6 +390,16 @@ class Locations(commands.Cog):
                 except ValueError:
                     await ctx.send(embed=self.makeLocationDoesNotExistEmbed())
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.downloadFromAWS()
+
+        self.uploadData.start()
+
+    @tasks.loop(hours=1)
+    async def uploadData(self):
+        self.uploadToAWS()
+
     def makeAddPromptEmbed(self, text: str) -> discord.Embed:
         """Generates an embed containing specified text and title."""
         embed = discord.Embed(color=0x52A435, description=text)
@@ -698,11 +710,11 @@ class Locations(commands.Cog):
 
     def downloadFromAWS(self) -> None:
         """Downloads and saves the location data from AWS."""
-        pass
+        s3.download_file('minecraft-bot', 'locations.yaml', self.dataFilepath)
 
     def uploadToAWS(self) -> None:
         """Uploads the saved location data to AWS."""
-        pass
+        s3.upload_file(self.dataFilepath, 'minecraft-bot', 'locations.yaml')
 
 
 def setup(bot):
